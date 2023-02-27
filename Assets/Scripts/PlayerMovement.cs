@@ -3,28 +3,89 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
-    [SerializeField] private float _speed;
+    [SerializeField] private float _walkSpeed;
+    [SerializeField] private float _crouchSpeed;
+    [SerializeField] private float _sprintSpeed;
     [SerializeField] private float _jumpForce;
-    [SerializeField] private PlayerMovementController _controller;
+    [SerializeField] private float _gravity;
 
-    private Rigidbody _rigidbody;
+    [Header("Controls")]
+    [SerializeField] private KeyCode JumpKey = KeyCode.Space;
+    [SerializeField] private KeyCode CrouchKey = KeyCode.LeftControl;
+    [SerializeField] private KeyCode SprintKey = KeyCode.LeftShift;
+
+    [SerializeField] private bool _canJump = true;
+    [SerializeField] private bool _canCrouch = true;
+    
+    private CharacterController _controller;
+    
+    private bool _isWalking;
+    private bool _shouldJump => Input.GetKeyDown(JumpKey) && _controller.isGrounded;
+    private bool _isSprinting => _canSprint && Input.GetKeyDown(SprintKey);
+    private bool _isCrouching;
+
+    private bool _canSprint = true;
+    private bool _canMove = true;
+    
+    private Collider[] _colliders;
+
+    private Vector3 _movementDirection;
+    private Vector3 _movementInput;
+    private float _currentSpeed;
 
     private void Start()
     {
-        _rigidbody = GetComponent<Rigidbody>();
+        _colliders = new Collider[10];
+        _controller = GetComponent<CharacterController>();
     }
 
-    private void FixedUpdate()
+    private void Update()
     {
-        _controller.Jump(_rigidbody, _jumpForce);
-        _controller.Move(
-            FormMovementVector(),
-            _speed);
+        if (_canMove)
+        {
+            HandleMovementInput();
+
+            if (_canJump)
+                HandleJump();
+            
+            if (_canCrouch)
+                HandleCrouch();
+            
+            ApplyMovements();
+        }
     }
 
-    private Vector3 FormMovementVector()
+    private void HandleMovementInput()
     {
-        float moveHorizontal = Input.GetAxisRaw("Horizontal");
-        return new Vector3(moveHorizontal, 0.0f, 0.0f);
+        if (_isSprinting)
+            _currentSpeed = _sprintSpeed;
+        else if (_isCrouching)
+            _currentSpeed = _crouchSpeed;
+        else
+            _currentSpeed = _walkSpeed;
+
+        _movementInput = new Vector3(_currentSpeed * Input.GetAxisRaw("Horizontal"), 0.0f, 0.0f);
+        float moveDirectionY = _movementDirection.y;
+        _movementDirection = transform.TransformDirection(Vector3.right) * _movementInput.x;
+        _movementDirection.y = moveDirectionY;
+    }
+    
+    private void HandleJump()
+    {
+        if (_shouldJump)
+            _movementDirection.y = _jumpForce;
+    }
+
+    private void HandleCrouch()
+    {
+        
+    }
+    
+    private void ApplyMovements()
+    {
+        if (!_controller.isGrounded)
+            _movementDirection.y -= _gravity * Time.deltaTime;
+
+        _controller.Move(_movementDirection * Time.deltaTime);
     }
 }
