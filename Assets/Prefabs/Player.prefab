@@ -112,15 +112,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19cb28c9afaab7d42b581eb2ae34cca6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _walkSpeed: 3.5
-  _crouchSpeed: 2
-  _sprintSpeed: 6
-  _jumpForce: 7
+  _walkSpeed: 2.5
+  _crouchSpeed: 1
+  _sprintSpeed: 4
+  _jumpForce: 6
   _gravity: 30
+  _crouchHeight: 0.5
+  _standingHeight: 2
+  _timeToCrouch: 0.25
+  _crouchingCenter: {x: 0, y: 0.5, z: 0}
+  _standingCenter: {x: 0, y: 0, z: 0}
   JumpKey: 32
   CrouchKey: 306
   SprintKey: 304
+  _canMove: 1
   _canJump: 1
+  _canSprint: 1
   _canCrouch: 1
 --- !u!143 &1570955793666553425
 CharacterController:
@@ -182,7 +189,6 @@ GameObject:
   - component: {fileID: 439833545291881939}
   - component: {fileID: 7132520819952964369}
   - component: {fileID: 3478386121872172193}
-  - component: {fileID: 2161307376079412846}
   m_Layer: 0
   m_Name: Face
   m_TagString: Untagged
@@ -198,8 +204,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3567977095270522397}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 0.49, y: 0.427, z: 0}
+  m_LocalScale: {x: -0.29, y: -0.23, z: -0.49}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1570955793666553455}
@@ -255,16 +261,3 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &2161307376079412846
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3567977095270522397}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}

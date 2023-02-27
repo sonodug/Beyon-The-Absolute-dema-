@@ -1,33 +1,49 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using Unity.VisualScripting.FullSerializer.Internal.Converters;
 using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
+    [Header("Movement params")]
     [SerializeField] private float _walkSpeed;
     [SerializeField] private float _crouchSpeed;
     [SerializeField] private float _sprintSpeed;
+    
+    [Header("Jumping params")]
     [SerializeField] private float _jumpForce;
     [SerializeField] private float _gravity;
+
+    [Header("Crouch params")]
+    [SerializeField] private float _crouchHeight = 0.425f;
+    [SerializeField] private float _timeToCrouch = 0.25f;
+    [SerializeField] private Vector3 _crouchingCenter = new Vector3(0, 0.5f, 0);
+    [SerializeField] private Vector3 _standingCenter = new Vector3(0, 0, 0);
 
     [Header("Controls")]
     [SerializeField] private KeyCode JumpKey = KeyCode.Space;
     [SerializeField] private KeyCode CrouchKey = KeyCode.LeftControl;
     [SerializeField] private KeyCode SprintKey = KeyCode.LeftShift;
 
+    [Header("Approve functional")]
+    [SerializeField] private bool _canMove = true;
     [SerializeField] private bool _canJump = true;
+    [SerializeField] private bool _canSprint = true;
     [SerializeField] private bool _canCrouch = true;
     
     private CharacterController _controller;
     
     private bool _isWalking;
     private bool _shouldJump => Input.GetKeyDown(JumpKey) && _controller.isGrounded;
+    private bool _shouldCrouch => Input.GetKeyDown(CrouchKey) && !_isCrouchAnimationActive && _controller.isGrounded;
     private bool _isSprinting => _canSprint && Input.GetKey(SprintKey);
-    private bool _isCrouching => _canCrouch && Input.GetKey(CrouchKey);
+    private bool _isCrouching;
+    private bool _isCrouchAnimationActive;
+    private float _standingHeight;
+    
     private bool _isFacingRight = true;
 
-    private bool _canSprint = true;
-    private bool _canMove = true;
-    
     private Collider[] _colliders;
 
     private Vector3 _movementDirection;
@@ -38,6 +54,7 @@ public class PlayerMovement : MonoBehaviour
     {
         _colliders = new Collider[10];
         _controller = GetComponent<CharacterController>();
+        _standingHeight = _controller.height;
     }
 
     private void Update()
@@ -80,7 +97,8 @@ public class PlayerMovement : MonoBehaviour
 
     private void HandleCrouch()
     {
-        
+        if (_shouldCrouch)
+            StartCoroutine(CrouchStand());
     }
 
     private void TryToFlip()
@@ -103,5 +121,30 @@ public class PlayerMovement : MonoBehaviour
             _movementDirection.y -= _gravity * Time.deltaTime;
 
         _controller.Move(_movementDirection * Time.deltaTime);
+    }
+
+    private IEnumerator CrouchStand()
+    {
+        _isCrouchAnimationActive = true;
+        float timeElapsed = 0;
+        float targetHeight = _isCrouching ? _standingHeight : _crouchHeight;
+        float currentHeight = _controller.height;
+        Vector3 targetCenter = _isCrouching ? _standingCenter : _crouchingCenter;
+        Vector3 currentCenter = _controller.center;
+
+        while (timeElapsed < _timeToCrouch)
+        {
+            _controller.height = Mathf.Lerp(currentHeight, targetHeight, timeElapsed / _timeToCrouch);
+            _controller.center = Vector3.Lerp(currentCenter, targetCenter, timeElapsed / _timeToCrouch);
+
+            timeElapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        _controller.height = targetHeight;
+        _controller.center = targetCenter;
+        _isCrouching = !_isCrouching;
+        
+        _isCrouchAnimationActive = false;
     }
 }
