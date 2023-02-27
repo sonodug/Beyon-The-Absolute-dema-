@@ -21,8 +21,9 @@ public class PlayerMovement : MonoBehaviour
     
     private bool _isWalking;
     private bool _shouldJump => Input.GetKeyDown(JumpKey) && _controller.isGrounded;
-    private bool _isSprinting => _canSprint && Input.GetKeyDown(SprintKey);
-    private bool _isCrouching;
+    private bool _isSprinting => _canSprint && Input.GetKey(SprintKey);
+    private bool _isCrouching => _canCrouch && Input.GetKey(CrouchKey);
+    private bool _isFacingRight = true;
 
     private bool _canSprint = true;
     private bool _canMove = true;
@@ -44,7 +45,8 @@ public class PlayerMovement : MonoBehaviour
         if (_canMove)
         {
             HandleMovementInput();
-
+            
+            TryToFlip();
             if (_canJump)
                 HandleJump();
             
@@ -66,7 +68,7 @@ public class PlayerMovement : MonoBehaviour
 
         _movementInput = new Vector3(_currentSpeed * Input.GetAxisRaw("Horizontal"), 0.0f, 0.0f);
         float moveDirectionY = _movementDirection.y;
-        _movementDirection = transform.TransformDirection(Vector3.right) * _movementInput.x;
+        _movementDirection = transform.TransformDirection(Vector3.right) * (_movementInput.x * (_isFacingRight ? 1 : -1));
         _movementDirection.y = moveDirectionY;
     }
     
@@ -79,6 +81,20 @@ public class PlayerMovement : MonoBehaviour
     private void HandleCrouch()
     {
         
+    }
+
+    private void TryToFlip()
+    {
+        if (_movementDirection.x < 0 && _isFacingRight)
+        {
+            transform.Rotate(0f, 180f, 0f);
+            _isFacingRight = !_isFacingRight;
+        }
+        else if (_movementDirection.x > 0 && !_isFacingRight)
+        {
+            transform.Rotate(0f, -180f, 0f);
+            _isFacingRight = !_isFacingRight;
+        }
     }
     
     private void ApplyMovements()
