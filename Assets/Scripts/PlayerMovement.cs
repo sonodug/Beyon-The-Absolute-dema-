@@ -13,6 +13,8 @@ public class PlayerMovement : MonoBehaviour
     
     [Header("Jumping params")]
     [SerializeField] private float _jumpForce;
+    [SerializeField] private float _wallJumpForce;
+    [SerializeField] private float _wallJumpXForce;
     [SerializeField] private float _gravity;
 
     [Header("Crouch params")]
@@ -31,11 +33,29 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private bool _canJump = true;
     [SerializeField] private bool _canSprint = true;
     [SerializeField] private bool _canCrouch = true;
+    [SerializeField] private bool _canSlideOnWall = true;
+    [SerializeField] private bool _canWallJump = true;
+    [SerializeField] private bool _canClimbOnLedge = true;
+
+    [Header("Head point")]
+    [SerializeField] private Transform _ceil;
+    [SerializeField] private Transform _wallCheck;
+    [SerializeField] private Transform _wallCheckUp;
+    
+    [SerializeField] private LayerMask _wallMask;
+    [SerializeField] private float _wallCheckRadius;
+    [SerializeField] private float _slideSpeed;
+    [SerializeField] private float _blockInputDuration;
+
+    [SerializeField] private float _climbingWallAnimDuration;
+    [SerializeField] private float _wallRayDistance;
+    [SerializeField] private float _ledgeRayIntervalY = 0.2f;
     
     private CharacterController _controller;
     
     private bool _isWalking;
     private bool _shouldJump => Input.GetKeyDown(JumpKey) && _controller.isGrounded;
+    private bool _shouldWallJump => Input.GetKeyDown(JumpKey) && _isOnWall && !_controller.isGrounded;
     private bool _shouldCrouch => Input.GetKeyDown(CrouchKey) && !_isCrouchAnimationActive && _controller.isGrounded;
     private bool _isSprinting => _canSprint && Input.GetKey(SprintKey);
     private bool _isCrouching;
@@ -44,15 +64,19 @@ public class PlayerMovement : MonoBehaviour
     
     private bool _isFacingRight = true;
 
-    private Collider[] _colliders;
-
     private Vector3 _movementDirection;
     private Vector3 _movementInput;
     private float _currentSpeed;
+    
+    private bool _isOnWall = false;
+    private bool _isOnLedge = false;
+    private bool _isOnWallUp = false;
+    private bool _moveDirectionYUpdated = true;
+    private bool _blockInputMovement => _isOnWall && !_controller.isGrounded;
+    private bool _blockInputMovementAfterWallJump = false;
 
     private void Start()
     {
-        _colliders = new Collider[10];
         _controller = GetComponent<CharacterController>();
         _standingHeight = _controller.height;
     }
@@ -61,22 +85,30 @@ public class PlayerMovement : MonoBehaviour
     {
         if (_canMove)
         {
-            HandleMovementInput();
+            if (!_blockInputMovement && !_blockInputMovementAfterWallJump)
+                HandleMovementInput();
             
             TryToFlip();
+            
             if (_canJump)
                 HandleJump();
             
             if (_canCrouch)
                 HandleCrouch();
             
+            if (_canWallJump)
+                HandleWallJump();
+            
+            if (_canClimbOnLedge)
+                HandleCheckOnLedge();
+
             ApplyMovements();
         }
     }
 
     private void HandleMovementInput()
     {
-        if (_isSprinting)
+        if (_isSprinting && !_isCrouching)
             _currentSpeed = _sprintSpeed;
         else if (_isCrouching)
             _currentSpeed = _crouchSpeed;
@@ -92,13 +124,66 @@ public class PlayerMovement : MonoBehaviour
     private void HandleJump()
     {
         if (_shouldJump)
-            _movementDirection.y = _jumpForce;
+        {
+            if (!Physics.Raycast(_ceil.position, Vector3.up, 1.0f))
+            {
+                _movementDirection.y = _jumpForce;
+            }
+        }
+    }
+
+    private void HandleWallJump()
+    {
+        if (_shouldWallJump && !_isSprinting)
+        {
+            StartCoroutine(BlockInputTimerCoroutine());
+            _movementDirection.x = _wallJumpXForce * (_isFacingRight ? -1 : 1);
+            _movementDirection.y = _wallJumpForce;
+        }
     }
 
     private void HandleCrouch()
     {
         if (_shouldCrouch)
-            StartCoroutine(CrouchStand());
+            StartCoroutine(CrouchStandCoroutine());
+    }
+    
+    private bool HandleCheckOnWall()
+    {
+        _isOnWall = Physics.Raycast(_wallCheck.position, Vector3.right * (_isFacingRight ? 1 : -1), _wallRayDistance, _wallMask) && !_controller.isGrounded;
+        return _isOnWall;
+    }
+
+    private void HandleCheckOnLedge()
+    {
+        if (_isOnWall)
+        {
+            _isOnLedge = !Physics.Raycast
+            (
+                new Vector3(_wallCheck.position.x, _wallCheck.position.y + _ledgeRayIntervalY, 0.0f),
+                Vector3.right * (_isFacingRight ? 1 : -1),
+                _wallRayDistance,
+                _wallMask
+            );
+        }
+        else
+            _isOnLedge = false;
+
+    }
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.blue;
+        Gizmos.DrawLine(_wallCheck.position,
+            new Vector3(_wallCheck.position.x + _wallRayDistance * (_isFacingRight ? 1 : -1), _wallCheck.position.y, 0.0f));
+        
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawLine
+        (
+            new Vector3(_wallCheck.position.x, _wallCheck.position.y + _ledgeRayIntervalY, 0.0f),
+            new Vector3(_wallCheck.position.x + _wallRayDistance * (_isFacingRight ? 1 : -1),
+                _wallCheck.position.y + _ledgeRayIntervalY, 0.0f)
+        );
     }
 
     private void TryToFlip()
@@ -114,17 +199,34 @@ public class PlayerMovement : MonoBehaviour
             _isFacingRight = !_isFacingRight;
         }
     }
-    
+
     private void ApplyMovements()
     {
-        if (!_controller.isGrounded)
+        if (HandleCheckOnWall() && _canSlideOnWall)
+        {
+            if (_moveDirectionYUpdated)
+                _movementDirection.y = 0.1f;
+            
+            _movementDirection.y -= _slideSpeed * Time.deltaTime;
+            _moveDirectionYUpdated = false;
+        }
+        else if (!_controller.isGrounded)
+        {
             _movementDirection.y -= _gravity * Time.deltaTime;
+        }
+        else
+        {
+            _moveDirectionYUpdated = true;
+        }
 
         _controller.Move(_movementDirection * Time.deltaTime);
     }
 
-    private IEnumerator CrouchStand()
+    private IEnumerator CrouchStandCoroutine()
     {
+        if (_isCrouching && Physics.Raycast(_ceil.position, Vector3.up, 0.3f))
+            yield break;
+
         _isCrouchAnimationActive = true;
         float timeElapsed = 0;
         float targetHeight = _isCrouching ? _standingHeight : _crouchHeight;
@@ -146,5 +248,20 @@ public class PlayerMovement : MonoBehaviour
         _isCrouching = !_isCrouching;
         
         _isCrouchAnimationActive = false;
+    }
+
+    private IEnumerator BlockInputTimerCoroutine()
+    {
+        _blockInputMovementAfterWallJump = true;
+        
+        float timeElapsed = 0;
+
+        while (timeElapsed < _blockInputDuration)
+        {
+            timeElapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        _blockInputMovementAfterWallJump = false;
     }
 }

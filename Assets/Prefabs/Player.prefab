@@ -1,5 +1,36 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1853289450
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1853289451}
+  m_Layer: 0
+  m_Name: CeilingCheck
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1853289451
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1853289450}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.49, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1570955793666553455}
+  m_RootOrder: 2
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1570955793666553446
 GameObject:
   m_ObjectHideFlags: 0
@@ -35,6 +66,9 @@ Transform:
   m_Children:
   - {fileID: 1570955794985260031}
   - {fileID: 439833545291881939}
+  - {fileID: 1853289451}
+  - {fileID: 5310173866000868777}
+  - {fileID: 227625388300139338}
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -115,12 +149,13 @@ MonoBehaviour:
   _walkSpeed: 2.5
   _crouchSpeed: 1
   _sprintSpeed: 4
-  _jumpForce: 6
-  _gravity: 30
+  _jumpForce: 6.5
+  _wallJumpForce: 4.5
+  _wallJumpXForce: 3
+  _gravity: 18
   _crouchHeight: 0.5
-  _standingHeight: 2
   _timeToCrouch: 0.25
-  _crouchingCenter: {x: 0, y: 0.5, z: 0}
+  _crouchingCenter: {x: 0, y: 0.2, z: 0}
   _standingCenter: {x: 0, y: 0, z: 0}
   JumpKey: 32
   CrouchKey: 306
@@ -129,6 +164,16 @@ MonoBehaviour:
   _canJump: 1
   _canSprint: 1
   _canCrouch: 1
+  _canSlideOnWall: 1
+  _canWallJump: 1
+  _ceil: {fileID: 1853289451}
+  _wallCheck: {fileID: 5310173866000868777}
+  _wallMask:
+    serializedVersion: 2
+    m_Bits: 128
+  _wallCheckRadius: 0.28
+  _slideSpeed: 3
+  _blockInputDuration: 0.22
 --- !u!143 &1570955793666553425
 CharacterController:
   m_ObjectHideFlags: 0
@@ -141,7 +186,7 @@ CharacterController:
   m_Enabled: 1
   serializedVersion: 2
   m_Height: 0.85
-  m_Radius: 0.35
+  m_Radius: 0.25
   m_SlopeLimit: 45
   m_StepOffset: 0.1
   m_SkinWidth: 0.08
@@ -177,6 +222,37 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1570955793666553455}
   m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &3091680695194863355
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5310173866000868777}
+  m_Layer: 0
+  m_Name: WallCheck
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5310173866000868777
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3091680695194863355}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.261, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1570955793666553455}
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &3567977095270522397
 GameObject:
@@ -261,3 +337,34 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &8215626476047149794
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 227625388300139338}
+  m_Layer: 0
+  m_Name: WallCheckUp
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &227625388300139338
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8215626476047149794}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.45, y: 0.3, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1570955793666553455}
+  m_RootOrder: 4
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
