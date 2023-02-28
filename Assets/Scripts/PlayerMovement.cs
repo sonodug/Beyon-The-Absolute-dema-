@@ -27,6 +27,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private KeyCode JumpKey = KeyCode.Space;
     [SerializeField] private KeyCode CrouchKey = KeyCode.LeftControl;
     [SerializeField] private KeyCode SprintKey = KeyCode.LeftShift;
+    [SerializeField] private KeyCode ClimbKey = KeyCode.W;
 
     [Header("Approve functional")]
     [SerializeField] private bool _canMove = true;
@@ -43,20 +44,27 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private Transform _wallCheckUp;
     
     [SerializeField] private LayerMask _wallMask;
+    [SerializeField] private LayerMask _ledgeMask;
     [SerializeField] private float _wallCheckRadius;
     [SerializeField] private float _slideSpeed;
     [SerializeField] private float _blockInputDuration;
+    [SerializeField] private float _climbAnimationDuration;
 
-    [SerializeField] private float _climbingWallAnimDuration;
     [SerializeField] private float _wallRayDistance;
+    [SerializeField] private float _wallLedgeDistance;
     [SerializeField] private float _ledgeRayIntervalY = 0.2f;
     
+    [Header("Climb finish offsets")]
+    [SerializeField] private float _climbFinishOffsetX;
+    [SerializeField] private float _climbFinishOffsetY;
+
     private CharacterController _controller;
     
     private bool _isWalking;
     private bool _shouldJump => Input.GetKeyDown(JumpKey) && _controller.isGrounded;
     private bool _shouldWallJump => Input.GetKeyDown(JumpKey) && _isOnWall && !_controller.isGrounded;
     private bool _shouldCrouch => Input.GetKeyDown(CrouchKey) && !_isCrouchAnimationActive && _controller.isGrounded;
+    private bool _shouldClimbLedge => Input.GetKeyDown(ClimbKey);
     private bool _isSprinting => _canSprint && Input.GetKey(SprintKey);
     private bool _isCrouching;
     private bool _isCrouchAnimationActive;
@@ -74,6 +82,9 @@ public class PlayerMovement : MonoBehaviour
     private bool _moveDirectionYUpdated = true;
     private bool _blockInputMovement => _isOnWall && !_controller.isGrounded;
     private bool _blockInputMovementAfterWallJump = false;
+    private float _middleOffsetY;
+    
+    private float _delay = 0.15f;
 
     private void Start()
     {
@@ -137,8 +148,8 @@ public class PlayerMovement : MonoBehaviour
         if (_shouldWallJump && !_isSprinting)
         {
             StartCoroutine(BlockInputTimerCoroutine());
-            _movementDirection.x = _wallJumpXForce * (_isFacingRight ? -1 : 1);
             _movementDirection.y = _wallJumpForce;
+            _movementDirection.x = _wallJumpXForce * (_isFacingRight ? -1 : 1);
         }
     }
 
@@ -162,15 +173,56 @@ public class PlayerMovement : MonoBehaviour
             (
                 new Vector3(_wallCheck.position.x, _wallCheck.position.y + _ledgeRayIntervalY, 0.0f),
                 Vector3.right * (_isFacingRight ? 1 : -1),
-                _wallRayDistance,
+                _wallLedgeDistance,
                 _wallMask
             );
         }
         else
             _isOnLedge = false;
 
+        if (_isOnLedge && _movementDirection.y < 0)
+        {
+            Debug.Log("ledge");
+            _movementDirection.y = 0.0f;
+            CalculateMiddleInterval();
+            HandleClimbOnLedge();
+        }
     }
 
+    private void CalculateMiddleInterval()
+    {
+        RaycastHit hit;
+
+        Ray ray = new Ray
+        (
+            new Vector3(_wallCheck.position.x + _wallRayDistance * (_isFacingRight ? 1 : -1), _wallCheck.position.y + _ledgeRayIntervalY, 0.0f),
+            Vector3.down
+        );
+        
+        Physics.Raycast
+        (
+            ray,
+            out hit,
+            _wallRayDistance,
+            _ledgeMask
+        );
+
+        _middleOffsetY = hit.distance;
+        
+        _controller.enabled = false;
+        transform.position = new Vector3(transform.position.x, transform.position.y - _middleOffsetY, transform.position.z);
+        _controller.enabled = true;
+    }
+
+    private void HandleClimbOnLedge()
+    {
+        if (_shouldClimbLedge)
+        {
+            //Animation
+            StartCoroutine(SimulateClimbAnimationCoroutine());
+        }
+    }
+    
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.blue;
@@ -183,6 +235,13 @@ public class PlayerMovement : MonoBehaviour
             new Vector3(_wallCheck.position.x, _wallCheck.position.y + _ledgeRayIntervalY, 0.0f),
             new Vector3(_wallCheck.position.x + _wallRayDistance * (_isFacingRight ? 1 : -1),
                 _wallCheck.position.y + _ledgeRayIntervalY, 0.0f)
+        );
+        
+        Gizmos.color = Color.green;
+        Gizmos.DrawLine
+        (
+            new Vector3(_wallCheck.position.x + _wallRayDistance * (_isFacingRight ? 1 : -1), _wallCheck.position.y + _ledgeRayIntervalY, 0.0f),
+            new Vector3(_wallCheck.position.x + _wallRayDistance * (_isFacingRight ? 1 : -1), _wallCheck.position.y, 0.0f)
         );
     }
 
@@ -263,5 +322,33 @@ public class PlayerMovement : MonoBehaviour
         }
 
         _blockInputMovementAfterWallJump = false;
+    }
+
+    private IEnumerator SimulateClimbAnimationCoroutine()
+    {
+        float timeElapsed = 0;
+
+        while (timeElapsed < _climbAnimationDuration)
+        {
+            timeElapsed += Time.deltaTime;
+            yield return null;
+        }
+        
+        _controller.enabled = false;
+        transform.position = new Vector3(transform.position.x + _climbFinishOffsetX * (_isFacingRight ? 1 : -1),
+            transform.position.y + transform.localScale.y - _climbFinishOffsetY, 
+            0.0f);
+        _controller.enabled = true;
+    }
+    
+    private IEnumerator DelayCoroutine()
+    {
+        float timeElapsed = 0;
+        
+        while (timeElapsed < _delay)
+        {
+            timeElapsed += Time.deltaTime;
+            yield return null;
+        }
     }
 }
