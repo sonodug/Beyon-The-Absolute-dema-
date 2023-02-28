@@ -42,6 +42,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private bool _canWallJump = true;
     [SerializeField] private bool _canClimbOnLedge = true;
     [SerializeField] private bool _canClimbOnSideLadder = true;
+    [SerializeField] private bool _canClimbOnMiddleLadder = true;
 
     [Header("Head point")]
     [SerializeField] private Transform _ceil;
@@ -56,6 +57,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float _climbAnimationDuration;
 
     [SerializeField] private float _wallRayDistance;
+    [SerializeField] private float _middleLadderRayDistance;
     [SerializeField] private float _wallLedgeDistance;
     [SerializeField] private float _ledgeRayIntervalY = 0.2f;
     
@@ -73,6 +75,10 @@ public class PlayerMovement : MonoBehaviour
     private bool _shouldClimbSideLadder => Input.GetKey(ClimbKey) && !Input.GetKey(DownLadderKey) && _isOnSideLadder;
     private bool _shouldDownSideLadder => Input.GetKey(DownLadderKey) && !Input.GetKey(ClimbKey) && _isOnSideLadder;
     private bool _isInputOnSideLadderActive => !Input.GetKey(DownLadderKey) && !Input.GetKey(ClimbKey) && _isOnSideLadder;
+    private bool _shouldMiddleLadderUsed => Input.GetKeyDown(MiddleLadderKey) && _isOnMiddleLadder && (_controller.isGrounded || _isMiddleLadderKeyPressed);
+    private bool _shouldClimbMiddleLadder => Input.GetKey(ClimbKey) && !Input.GetKey(DownLadderKey) && _isOnMiddleLadder;
+    private bool _shouldDownMiddleLadder => Input.GetKey(DownLadderKey) && !Input.GetKey(ClimbKey) && _isOnMiddleLadder;
+    private bool _isInputOnMiddleLadderActive => !Input.GetKey(DownLadderKey) && !Input.GetKey(ClimbKey) && _isOnMiddleLadder;
     private bool _isSprinting => _canSprint && Input.GetKey(SprintKey);
     private bool _isCrouching;
     private bool _isCrouchAnimationActive;
@@ -87,8 +93,11 @@ public class PlayerMovement : MonoBehaviour
     private bool _isOnWall = false;
     private bool _isOnLedge = false;
     private bool _isOnSideLadder = false;
+    private bool _isOnMiddleLadder = false;
     private bool _moveDirectionYUpdated = true;
     private bool _blockInputOnSideLadderMovement = false;
+    private bool _blockInputOnMiddleLadderMovement = false;
+    private bool _isReadyToMiddleLadderMovement = false;
     private bool _blockInputOnWallMovement => _isOnWall && !_controller.isGrounded;
     private bool _blockInputMovementAfterWallJump = false;
     private bool _blockInputLedge = false;
@@ -98,6 +107,11 @@ public class PlayerMovement : MonoBehaviour
     private float _delay = 0.15f;
 
     private bool _setGravity = false;
+
+    private bool _isMiddleLadderKeyPressed = false;
+    private bool _canJumpFromMiddleLadder = false;
+    private Vector3 _MiddleLadderCheckVector = Vector3.forward;
+    
     private void Start()
     {
         _controller = GetComponent<CharacterController>();
@@ -108,15 +122,17 @@ public class PlayerMovement : MonoBehaviour
     {
         if (_canMove)
         {
-            if (!_blockInputOnWallMovement && !_blockInputMovementAfterWallJump && !_blockInputOnSideLadderMovement)
+            if (!_blockInputOnWallMovement && !_blockInputMovementAfterWallJump && !_blockInputOnSideLadderMovement && !_blockInputOnMiddleLadderMovement)
                 HandleMovementInput();
             
             TryToFlip();
-            
-            if (_canJump)
+
+            if ((_canJump && !_blockInputOnMiddleLadderMovement) || _canJumpFromMiddleLadder)
+            {
                 HandleJump();
-            
-            if (_canCrouch)
+            }
+
+            if (_canCrouch && !_blockInputOnMiddleLadderMovement)
                 HandleCrouch();
             
             if (_canWallJump)
@@ -127,9 +143,22 @@ public class PlayerMovement : MonoBehaviour
 
             if (_canClimbOnSideLadder)
             {
-                HandleCheckOnLadder();
-                HandleOnLadderMovement();
-                HandleCheckOnLedgeLadder();
+                HandleCheckOnSideLadder();
+                HandleOnSideLadderMovement();
+                HandleCheckOnLedgeSideLadder();
+            }
+
+            if (_canClimbOnMiddleLadder)
+            {
+                HandleCheckOnMiddleLadder();
+                HandleOnMiddleLadderMovement();
+
+                if (_isReadyToMiddleLadderMovement)
+                {
+                    ApplyMiddleLadderMovement();
+                }
+
+                HandleCheckOnLedgeMiddleLadder();
             }
 
             ApplyMovements();
@@ -153,8 +182,13 @@ public class PlayerMovement : MonoBehaviour
     
     private void HandleJump()
     {
-        if (_shouldJump)
+        if (_shouldJump || Input.GetKeyDown(JumpKey) && _canJumpFromMiddleLadder)
         {
+            if (_canJumpFromMiddleLadder)
+            {
+                EscapeFromLadder();
+            }
+            
             if (!Physics.Raycast(_ceil.position, Vector3.up, 1.0f))
             {
                 _movementDirection.y = _jumpForce;
@@ -184,12 +218,79 @@ public class PlayerMovement : MonoBehaviour
         return _isOnWall;
     }
     
-    private void HandleCheckOnLadder()
+    private void HandleCheckOnSideLadder()
     {
         _isOnSideLadder = Physics.Raycast(_wallCheck.position, Vector3.right * (_isFacingRight ? 1 : -1), _wallRayDistance, _sideLadderMask);
     }
 
-    private void HandleOnLadderMovement()
+    private void HandleCheckOnMiddleLadder()
+    {
+        _isOnMiddleLadder = Physics.Raycast(_wallCheck.position, Vector3.forward, _middleLadderRayDistance, _middleLadderMask);
+    }
+
+    private void HandleOnMiddleLadderMovement()
+    {
+        if (_isOnMiddleLadder)
+        {
+            if (_shouldMiddleLadderUsed)
+            {
+                if (!_isMiddleLadderKeyPressed)
+                {
+                    if (_isCrouching)
+                    {
+                        _controller.enabled = false;
+                        transform.position = new Vector3(transform.position.x, transform.position.y + transform.localScale.y / 2 - 0.1f, 0.0f);
+                        _controller.enabled = true;
+                        float prevTimeToCrouch = _timeToCrouch;
+                        _timeToCrouch = 0;
+                        StartCoroutine(CrouchStandCoroutine());
+                        _timeToCrouch = prevTimeToCrouch;
+                    }
+                    transform.Rotate(0f, (_isFacingRight ? -90.0f : 90.0f), 0f);
+                    
+                    _isMiddleLadderKeyPressed = true;
+                    _blockInputOnMiddleLadderMovement = true;
+                    _movementDirection.x = 0.0f;
+                    _movementDirection.y = 0.0f;
+                    _isReadyToMiddleLadderMovement = !_isReadyToMiddleLadderMovement;
+                    _MiddleLadderCheckVector = Vector3.right;
+                }
+                else if(_isMiddleLadderKeyPressed)
+                {
+                    EscapeFromLadder();
+                }
+            }
+        }
+    }
+
+    private void EscapeFromLadder()
+    {
+        transform.Rotate(0f, (_isFacingRight ? 90.0f : -90.0f), 0f);
+        _isMiddleLadderKeyPressed = false;
+        _blockInputOnMiddleLadderMovement = false;
+        _isReadyToMiddleLadderMovement = !_isReadyToMiddleLadderMovement;
+        _MiddleLadderCheckVector = Vector3.forward;
+    }
+
+    private void ApplyMiddleLadderMovement()
+    {
+        if (_shouldClimbMiddleLadder)
+        {
+            _movementDirection.y = _ladderSpeed;
+        }
+
+        if (_shouldDownMiddleLadder)
+        {
+            _movementDirection.y = -_ladderSpeed;
+        }
+
+        if (_isInputOnMiddleLadderActive)
+        {
+            _movementDirection.y = 0.0f;
+        }
+    }
+    
+    private void HandleOnSideLadderMovement()
     {
         if (_isOnSideLadder)
         {
@@ -247,7 +348,7 @@ public class PlayerMovement : MonoBehaviour
         }
     }
     
-    private void HandleCheckOnLedgeLadder()
+    private void HandleCheckOnLedgeSideLadder()
     {
         if (_isOnSideLadder)
         {
@@ -267,6 +368,34 @@ public class PlayerMovement : MonoBehaviour
             _movementDirection.y = 0.0f;
             CalculateMiddleInterval();
             HandleClimbOnLedgeLadder();
+        }
+    }
+    
+    private void HandleCheckOnLedgeMiddleLadder()
+    {
+        if (_isOnMiddleLadder)
+        {
+            _isOnLedge = !Physics.Raycast
+            (
+                new Vector3(_wallCheck.position.x, _wallCheck.position.y + _ledgeRayIntervalY, 0.0f),
+                Vector3.forward,
+                _wallLedgeDistance,
+                _middleLadderMask
+            );
+        }
+        else
+        {
+            _isOnLedge = false;
+        }
+
+        if (!_isOnLedge)
+            _canJumpFromMiddleLadder = false;
+        
+        if (_isOnLedge && _movementDirection.y >= 0)
+        {
+            _movementDirection.y = 0.0f;
+            _canJumpFromMiddleLadder = true;
+            CalculateMiddleInterval();
         }
     }
 
@@ -291,7 +420,7 @@ public class PlayerMovement : MonoBehaviour
         _middleOffsetY = hit.distance;
         
         _controller.enabled = false;
-        transform.position = new Vector3(transform.position.x, transform.position.y - _middleOffsetY, transform.position.z);
+        transform.position = new Vector3(transform.position.x, transform.position.y - _middleOffsetY, 0);
         _controller.enabled = true;
     }
 
@@ -305,6 +434,15 @@ public class PlayerMovement : MonoBehaviour
     }
     
     private void HandleClimbOnLedgeLadder()
+    {
+        if (!_blockInputLedge)
+        {
+            //Animation
+            StartCoroutine(SimulateClimbAnimationCoroutine());
+        }
+    }
+
+    private void HandleClimbOnMiddleLadder()
     {
         if (!_blockInputLedge)
         {
@@ -359,7 +497,7 @@ public class PlayerMovement : MonoBehaviour
             _movementDirection.y -= _slideSpeed * Time.deltaTime;
             _moveDirectionYUpdated = false;
         }
-        else if (!_controller.isGrounded && !_blockInputOnSideLadderMovement)
+        else if (!_controller.isGrounded && !_blockInputOnSideLadderMovement && !_blockInputOnMiddleLadderMovement)
         {
             _movementDirection.y -= _gravity * Time.deltaTime;
         }
@@ -368,6 +506,7 @@ public class PlayerMovement : MonoBehaviour
             _moveDirectionYUpdated = true;
         }
 
+        _movementDirection.z = 0;
         _controller.Move(_movementDirection * Time.deltaTime);
     }
 
