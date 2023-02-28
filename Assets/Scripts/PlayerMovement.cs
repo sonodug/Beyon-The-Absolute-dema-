@@ -11,6 +11,8 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float _crouchSpeed;
     [SerializeField] private float _sprintSpeed;
     
+    [SerializeField] private float _ladderSpeed;
+    
     [Header("Jumping params")]
     [SerializeField] private float _jumpForce;
     [SerializeField] private float _wallJumpForce;
@@ -28,6 +30,8 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private KeyCode CrouchKey = KeyCode.LeftControl;
     [SerializeField] private KeyCode SprintKey = KeyCode.LeftShift;
     [SerializeField] private KeyCode ClimbKey = KeyCode.W;
+    [SerializeField] private KeyCode DownLadderKey = KeyCode.S;
+    [SerializeField] private KeyCode MiddleLadderKey = KeyCode.E;
 
     [Header("Approve functional")]
     [SerializeField] private bool _canMove = true;
@@ -37,15 +41,16 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private bool _canSlideOnWall = true;
     [SerializeField] private bool _canWallJump = true;
     [SerializeField] private bool _canClimbOnLedge = true;
+    [SerializeField] private bool _canClimbOnSideLadder = true;
 
     [Header("Head point")]
     [SerializeField] private Transform _ceil;
     [SerializeField] private Transform _wallCheck;
-    [SerializeField] private Transform _wallCheckUp;
-    
+
     [SerializeField] private LayerMask _wallMask;
     [SerializeField] private LayerMask _ledgeMask;
-    [SerializeField] private float _wallCheckRadius;
+    [SerializeField] private LayerMask _sideLadderMask;
+    [SerializeField] private LayerMask _middleLadderMask;
     [SerializeField] private float _slideSpeed;
     [SerializeField] private float _blockInputDuration;
     [SerializeField] private float _climbAnimationDuration;
@@ -61,10 +66,13 @@ public class PlayerMovement : MonoBehaviour
     private CharacterController _controller;
     
     private bool _isWalking;
-    private bool _shouldJump => Input.GetKeyDown(JumpKey) && _controller.isGrounded;
-    private bool _shouldWallJump => Input.GetKeyDown(JumpKey) && _isOnWall && !_controller.isGrounded;
+    private bool _shouldJump => Input.GetKeyDown(JumpKey) && _controller.isGrounded && !_isOnSideLadder;
+    private bool _shouldWallJump => Input.GetKeyDown(JumpKey) && (_isOnWall || _isOnSideLadder) && !_controller.isGrounded;
     private bool _shouldCrouch => Input.GetKeyDown(CrouchKey) && !_isCrouchAnimationActive && _controller.isGrounded;
     private bool _shouldClimbLedge => Input.GetKeyDown(ClimbKey);
+    private bool _shouldClimbSideLadder => Input.GetKey(ClimbKey) && !Input.GetKey(DownLadderKey) && _isOnSideLadder;
+    private bool _shouldDownSideLadder => Input.GetKey(DownLadderKey) && !Input.GetKey(ClimbKey) && _isOnSideLadder;
+    private bool _isInputOnSideLadderActive => !Input.GetKey(DownLadderKey) && !Input.GetKey(ClimbKey) && _isOnSideLadder;
     private bool _isSprinting => _canSprint && Input.GetKey(SprintKey);
     private bool _isCrouching;
     private bool _isCrouchAnimationActive;
@@ -78,14 +86,18 @@ public class PlayerMovement : MonoBehaviour
     
     private bool _isOnWall = false;
     private bool _isOnLedge = false;
-    private bool _isOnWallUp = false;
+    private bool _isOnSideLadder = false;
     private bool _moveDirectionYUpdated = true;
-    private bool _blockInputMovement => _isOnWall && !_controller.isGrounded;
+    private bool _blockInputOnSideLadderMovement = false;
+    private bool _blockInputOnWallMovement => _isOnWall && !_controller.isGrounded;
     private bool _blockInputMovementAfterWallJump = false;
+    private bool _blockInputLedge = false;
+    private bool _blockWallJump = false;
     private float _middleOffsetY;
     
     private float _delay = 0.15f;
 
+    private bool _setGravity = false;
     private void Start()
     {
         _controller = GetComponent<CharacterController>();
@@ -96,7 +108,7 @@ public class PlayerMovement : MonoBehaviour
     {
         if (_canMove)
         {
-            if (!_blockInputMovement && !_blockInputMovementAfterWallJump)
+            if (!_blockInputOnWallMovement && !_blockInputMovementAfterWallJump && !_blockInputOnSideLadderMovement)
                 HandleMovementInput();
             
             TryToFlip();
@@ -112,6 +124,13 @@ public class PlayerMovement : MonoBehaviour
             
             if (_canClimbOnLedge)
                 HandleCheckOnLedge();
+
+            if (_canClimbOnSideLadder)
+            {
+                HandleCheckOnLadder();
+                HandleOnLadderMovement();
+                HandleCheckOnLedgeLadder();
+            }
 
             ApplyMovements();
         }
@@ -145,7 +164,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void HandleWallJump()
     {
-        if (_shouldWallJump && !_isSprinting)
+        if (_shouldWallJump && !_isSprinting && !_blockWallJump)
         {
             StartCoroutine(BlockInputTimerCoroutine());
             _movementDirection.y = _wallJumpForce;
@@ -163,6 +182,46 @@ public class PlayerMovement : MonoBehaviour
     {
         _isOnWall = Physics.Raycast(_wallCheck.position, Vector3.right * (_isFacingRight ? 1 : -1), _wallRayDistance, _wallMask) && !_controller.isGrounded;
         return _isOnWall;
+    }
+    
+    private void HandleCheckOnLadder()
+    {
+        _isOnSideLadder = Physics.Raycast(_wallCheck.position, Vector3.right * (_isFacingRight ? 1 : -1), _wallRayDistance, _sideLadderMask);
+    }
+
+    private void HandleOnLadderMovement()
+    {
+        if (_isOnSideLadder)
+        {
+            _blockInputOnSideLadderMovement = true;
+            if (_setGravity == false)
+            {
+                _movementDirection.y = 0.0f;
+                _setGravity = true;
+                if (_isCrouching)
+                    StartCoroutine(CrouchStandCoroutine());
+            }
+            
+            if (_shouldClimbSideLadder)
+            {
+                _movementDirection.y = _ladderSpeed;
+            }
+
+            if (_shouldDownSideLadder)
+            {
+                _movementDirection.y = -_ladderSpeed;
+            }
+
+            if (_isInputOnSideLadderActive)
+            {
+                _movementDirection.y = 0.0f;
+            }
+        }
+        else
+        {
+            _setGravity = false;
+            _blockInputOnSideLadderMovement = false;
+        }
     }
 
     private void HandleCheckOnLedge()
@@ -182,10 +241,32 @@ public class PlayerMovement : MonoBehaviour
 
         if (_isOnLedge && _movementDirection.y < 0)
         {
-            Debug.Log("ledge");
             _movementDirection.y = 0.0f;
             CalculateMiddleInterval();
             HandleClimbOnLedge();
+        }
+    }
+    
+    private void HandleCheckOnLedgeLadder()
+    {
+        if (_isOnSideLadder)
+        {
+            _isOnLedge = !Physics.Raycast
+            (
+                new Vector3(_wallCheck.position.x, _wallCheck.position.y + _ledgeRayIntervalY, 0.0f),
+                Vector3.right * (_isFacingRight ? 1 : -1),
+                _wallLedgeDistance,
+                _sideLadderMask
+            );
+        }
+        else
+            _isOnLedge = false;
+
+        if (_isOnLedge && _movementDirection.y > 0)
+        {
+            _movementDirection.y = 0.0f;
+            CalculateMiddleInterval();
+            HandleClimbOnLedgeLadder();
         }
     }
 
@@ -216,13 +297,22 @@ public class PlayerMovement : MonoBehaviour
 
     private void HandleClimbOnLedge()
     {
-        if (_shouldClimbLedge)
+        if (_shouldClimbLedge && !_blockInputLedge)
         {
             //Animation
             StartCoroutine(SimulateClimbAnimationCoroutine());
         }
     }
     
+    private void HandleClimbOnLedgeLadder()
+    {
+        if (!_blockInputLedge)
+        {
+            //Animation
+            StartCoroutine(SimulateClimbAnimationCoroutine());
+        }
+    }
+
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.blue;
@@ -269,7 +359,7 @@ public class PlayerMovement : MonoBehaviour
             _movementDirection.y -= _slideSpeed * Time.deltaTime;
             _moveDirectionYUpdated = false;
         }
-        else if (!_controller.isGrounded)
+        else if (!_controller.isGrounded && !_blockInputOnSideLadderMovement)
         {
             _movementDirection.y -= _gravity * Time.deltaTime;
         }
@@ -313,6 +403,7 @@ public class PlayerMovement : MonoBehaviour
     {
         _blockInputMovementAfterWallJump = true;
         
+        
         float timeElapsed = 0;
 
         while (timeElapsed < _blockInputDuration)
@@ -326,6 +417,8 @@ public class PlayerMovement : MonoBehaviour
 
     private IEnumerator SimulateClimbAnimationCoroutine()
     {
+        _blockInputLedge = true;
+        _blockWallJump = true;
         float timeElapsed = 0;
 
         while (timeElapsed < _climbAnimationDuration)
@@ -339,6 +432,9 @@ public class PlayerMovement : MonoBehaviour
             transform.position.y + transform.localScale.y - _climbFinishOffsetY, 
             0.0f);
         _controller.enabled = true;
+        
+        _blockInputLedge = false;
+        _blockWallJump = false;
     }
     
     private IEnumerator DelayCoroutine()
