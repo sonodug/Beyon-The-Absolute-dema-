@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using Unity.VisualScripting.FullSerializer.Internal.Converters;
 using UnityEngine;
 
@@ -66,6 +67,8 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float _climbFinishOffsetY;
 
     private CharacterController _controller;
+
+    private Animator _testAnimator;
     
     private bool _isWalking;
     private bool _shouldJump => Input.GetKeyDown(JumpKey) && _controller.isGrounded && !_isOnSideLadder;
@@ -115,6 +118,7 @@ public class PlayerMovement : MonoBehaviour
     private void Start()
     {
         _controller = GetComponent<CharacterController>();
+        _testAnimator = GetComponent<Animator>();
         _standingHeight = _controller.height;
     }
 
@@ -160,7 +164,7 @@ public class PlayerMovement : MonoBehaviour
 
                 HandleCheckOnLedgeMiddleLadder();
             }
-
+            
             ApplyMovements();
         }
     }
@@ -189,7 +193,7 @@ public class PlayerMovement : MonoBehaviour
                 EscapeFromLadder();
             }
             
-            if (!Physics.Raycast(_ceil.position, Vector3.up, 1.0f))
+            if (!Physics.Raycast(_ceil.position, Vector3.up, 0.1f))
             {
                 _movementDirection.y = _jumpForce;
             }
@@ -519,6 +523,7 @@ public class PlayerMovement : MonoBehaviour
         float timeElapsed = 0;
         float targetHeight = _isCrouching ? _standingHeight : _crouchHeight;
         float currentHeight = _controller.height;
+        Vector3 currentLocalScale = transform.localScale;
         Vector3 targetCenter = _isCrouching ? _standingCenter : _crouchingCenter;
         Vector3 currentCenter = _controller.center;
 
@@ -526,7 +531,10 @@ public class PlayerMovement : MonoBehaviour
         {
             _controller.height = Mathf.Lerp(currentHeight, targetHeight, timeElapsed / _timeToCrouch);
             _controller.center = Vector3.Lerp(currentCenter, targetCenter, timeElapsed / _timeToCrouch);
-
+            
+            _controller.enabled = false;
+            transform.localScale = Vector3.Lerp(currentLocalScale, new Vector3(currentLocalScale.x, targetHeight - 0.1f, currentLocalScale.z), timeElapsed / _timeToCrouch);
+            _controller.enabled = true;
             timeElapsed += Time.deltaTime;
             yield return null;
         }
@@ -550,7 +558,7 @@ public class PlayerMovement : MonoBehaviour
             timeElapsed += Time.deltaTime;
             yield return null;
         }
-
+        
         _blockInputMovementAfterWallJump = false;
     }
 
@@ -571,7 +579,7 @@ public class PlayerMovement : MonoBehaviour
             transform.position.y + transform.localScale.y - _climbFinishOffsetY, 
             0.0f);
         _controller.enabled = true;
-        
+
         _blockInputLedge = false;
         _blockWallJump = false;
     }
