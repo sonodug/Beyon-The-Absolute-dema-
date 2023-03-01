@@ -12,5 +12,6 @@ public abstract class Enemy : MonoBehaviour
 
     protected abstract void OnDied();
     protected abstract void OnStunned();
+    public abstract void ApplyStun();
     protected abstract void InitBehaviours();
 }

@@ -23,10 +23,13 @@ public class Player : MonoBehaviour
 
     public UnityAction Stunned;
     public UnityAction MenuOpened;
+    public UnityAction OpenedText;
 
     private PlayerMovement _movement;
     private bool _isEnemyNear;
     private bool _isEnemyStunned;
+
+    private Enemy _currentEnemy;
 
     private void Start()
     {
@@ -35,6 +38,11 @@ public class Player : MonoBehaviour
 
     private void Update()
     {
+        if (_isEnemyNear)
+        {
+            OpenedText?.Invoke();
+        }
+        
         if (_shouldInteractiveWithUI)
         {
             MenuOpened?.Invoke();
@@ -80,7 +88,7 @@ public class Player : MonoBehaviour
 
         if (_shouldStunEnemy)
         {
-            Stunned?.Invoke();
+            _currentEnemy.ApplyStun();
         }
     }
 
@@ -97,6 +105,7 @@ public class Player : MonoBehaviour
 
         if (Physics.Raycast(ray, out hit, _enemyDetectedRayDistance, _enemyMask))
         {
+            _currentEnemy = hit.collider.GetComponent<Enemy>();
             _isEnemyStunned = hit.collider.GetComponent<Enemy>().IsStunned;
         }
     }

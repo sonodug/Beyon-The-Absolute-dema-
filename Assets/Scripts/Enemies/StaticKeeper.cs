@@ -42,15 +42,20 @@ public class StaticKeeper : Enemy
 
     protected override void OnStunned()
     {
-        IsStunned = true;
-        _prevState = transform;
-        _rigidbody.AddForce(Vector3.forward * (_stunForce * 100.0f));
-        StartCoroutine(StunCoroutine());
+        
     }
 
     protected override void InitBehaviours()
     {
         
+    }
+
+    public override void ApplyStun()
+    {
+        IsStunned = true;
+        _prevState = transform;
+        _rigidbody.AddForce(Vector3.forward * (_stunForce * 100.0f));
+        StartCoroutine(StunCoroutine());
     }
     
     private IEnumerator StunCoroutine()

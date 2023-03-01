@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using TMPro;
 using Unity.VisualScripting.FullSerializer.Internal.Converters;
 using UnityEngine;
+using UnityEngine.Events;
 
 public class PlayerMovement : MonoBehaviour
 {
@@ -117,7 +118,7 @@ public class PlayerMovement : MonoBehaviour
 
     public Transform WallCheck => _wallCheck;
     public bool IsFacingRight => _isFacingRight;
-    
+
     private void Start()
     {
         _controller = GetComponent<CharacterController>();

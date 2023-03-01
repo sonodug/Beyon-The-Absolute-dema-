@@ -24,7 +24,7 @@ public class Elevator : MonoBehaviour
         if (_applyMovement || _isOnTargetToCallButton)
         {
             _prevElapsedTime += Time.deltaTime;
-            transform.position = Vector3.Lerp(transform.position, _currentTargetPoint.position, _prevElapsedTime / (_moveToTargetDuration * 100.0f));
+            transform.position = Vector3.MoveTowards(transform.position, _currentTargetPoint.position, _prevElapsedTime / (_moveToTargetDuration * 100.0f));
 
             if (transform.position == _currentTargetPoint.position && !_isOnTargetTo && !_isOnTargetToCallButton)
                 StartCoroutine(DelayCoroutine());

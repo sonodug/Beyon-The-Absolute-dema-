@@ -76,6 +76,11 @@ public class PatrolKeeper : Enemy
 
     protected override void OnStunned()
     {
+
+    }
+
+    public override void ApplyStun()
+    {
         IsStunned = true;
         _prevState = transform;
         _rigidbody.AddForce(Vector3.forward * (_stunForce * 100.0f));
