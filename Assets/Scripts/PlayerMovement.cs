@@ -127,6 +127,13 @@ public class PlayerMovement : MonoBehaviour
 
     private void Update()
     {
+        if (transform.position.z != 0 && !_isOnMiddleLadder)
+        {
+            _controller.enabled = false;
+            transform.position = new Vector3(transform.position.x, transform.position.y, 0.0f);
+            _controller.enabled = true;
+        }
+
         if (_canMove)
         {
             if (!_blockInputOnWallMovement && !_blockInputMovementAfterWallJump && !_blockInputOnSideLadderMovement && !_blockInputOnMiddleLadderMovement)
@@ -515,6 +522,13 @@ public class PlayerMovement : MonoBehaviour
 
         _movementDirection.z = 0;
         _controller.Move(_movementDirection * Time.deltaTime);
+    }
+
+    public void MoveToSpawnPoint(Transform spawnPoint)
+    {
+        _controller.enabled = false;
+        transform.position = new Vector3(spawnPoint.position.x, spawnPoint.position.y, 0.0f);
+        _controller.enabled = true;
     }
 
     private IEnumerator CrouchStandCoroutine()

@@ -1,33 +1,29 @@
 using DG.Tweening;
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody2D))]
 public class PatrolMovement : MonoBehaviour, IMovable
 {
     [SerializeField] private Transform[] _waypoints;
-    [SerializeField] private float _speed;
+    [SerializeField] private float _duration;
 
-    private Vector2[] _waypointsPosition;
-    private Rigidbody2D _rigidbody2D;
+    private Vector3[] _waypointsPosition;
+    public Vector3[] WaypointsPosition => _waypointsPosition;
 
-    private void Start()
+    private void Awake()
     {
         _waypointsPosition = ConvertToVectorArray(_waypoints);
-        _rigidbody2D = GetComponent<Rigidbody2D>();
-
         Move();
     }
 
     public void Move()
     {
-        Tween tween = _rigidbody2D.DOPath(_waypointsPosition, 100.0f / _speed, PathType.Linear).SetOptions(true);
-
-        tween.SetEase(Ease.Linear).SetLoops(-1);
+        Tween tween = transform.DOPath(_waypointsPosition, _duration, PathType.Linear).SetOptions(true);
+        tween.SetLoops(-1);
     }
 
-    private Vector2[] ConvertToVectorArray(Transform[] array)
+    private Vector3[] ConvertToVectorArray(Transform[] array)
     {
-        Vector2[] vectorArray = new Vector2[array.Length];
+        Vector3[] vectorArray = new Vector3[array.Length];
 
         for (int i = 0; i < array.Length; i++)
         {

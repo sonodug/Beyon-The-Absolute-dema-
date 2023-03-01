@@ -9,9 +9,15 @@ public class Lamp : MonoBehaviour
     [SerializeField] private Light _spotLight;
     [SerializeField] private BoxCollider _deathArea;
 
-    public void DisableArea()
+    public void Disable()
     {
         _spotLight.enabled = false;
         _deathArea.enabled = false;
+    }
+    
+    public void Enable()
+    {
+        _spotLight.enabled = true;
+        _deathArea.enabled = true;
     }
 }

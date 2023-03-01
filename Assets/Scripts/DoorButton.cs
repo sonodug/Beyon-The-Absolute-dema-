@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Button : MonoBehaviour
+public class DoorButton : MonoBehaviour
 {
     [SerializeField] private HorizontalDoor _door;
     [SerializeField] private Transform _doorPoint;

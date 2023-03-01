@@ -8,6 +8,7 @@ public class Player : MonoBehaviour
     [SerializeField] private KeyCode StunKey = KeyCode.Z;
     [SerializeField] private LayerMask _enemyMask;
     [SerializeField] private float _enemyDetectedRayDistance;
+    [SerializeField] private Transform _spawnPoint;
     
     private bool _canInteractive = false;
     private bool _shouldOpenDoor => _canInteractive && Input.GetKeyDown(InteractiveKey);
@@ -15,7 +16,7 @@ public class Player : MonoBehaviour
     private bool _capsuleDestroyed = false;
     
     private Generator _currentActiveGenerator;
-    private Button _currentActiveButton;
+    private DoorButton _currentActiveDoorButton;
     private CallElevatorButton _currentActiveCallElevatorButton;
 
     public UnityAction Stunned;
@@ -47,11 +48,11 @@ public class Player : MonoBehaviour
 
         if (_shouldOpenDoor)
         {
-            if (_currentActiveButton != null)
+            if (_currentActiveDoorButton != null)
             {
-                if (!_currentActiveButton.DoorOpened)
+                if (!_currentActiveDoorButton.DoorOpened)
                 {
-                    _currentActiveButton.OpenDoor();
+                    _currentActiveDoorButton.OpenDoor();
                 }
             }
         }
@@ -94,7 +95,7 @@ public class Player : MonoBehaviour
 
     public void Dead()
     {
-        Destroy(gameObject);
+        _movement.MoveToSpawnPoint(_spawnPoint);
     }
 
     public void HandleInteractiveWithGenerator(Generator generator, bool interactiveStatus)
@@ -103,10 +104,10 @@ public class Player : MonoBehaviour
         _currentActiveGenerator = generator;
     }
     
-    public void HandleInteractiveWithDoorButton(Button button, bool interactiveStatus)
+    public void HandleInteractiveWithDoorButton(DoorButton doorButton, bool interactiveStatus)
     {
         _canInteractive = interactiveStatus;
-        _currentActiveButton = button;
+        _currentActiveDoorButton = doorButton;
     }
     
     public void HandleInteractiveWithElevatorTumbler(CallElevatorButton callElevatorButton, bool interactiveStatus)

@@ -32,7 +32,7 @@ public class Generator : MonoBehaviour
     public void DestroyCapsule()
     {
         Destroy(lightCapsule.gameObject);
-        _lamp.DisableArea();
+        _lamp.Disable();
     }
     
     private IEnumerator ExceptOpenDoorCoroutine()

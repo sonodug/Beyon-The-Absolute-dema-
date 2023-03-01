@@ -8,7 +8,7 @@ public class ButtonInteractiveZone : MonoBehaviour
     {
         if (other.gameObject.TryGetComponent<Player>(out Player player))
         {
-            player.HandleInteractiveWithDoorButton(gameObject.GetComponentInParent<Button>(), true);
+            player.HandleInteractiveWithDoorButton(gameObject.GetComponentInParent<DoorButton>(), true);
         }
     }
     
