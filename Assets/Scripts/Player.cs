@@ -1,18 +1,33 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 
+[RequireComponent(typeof(PlayerMovement))]
 public class Player : MonoBehaviour
 {
     [SerializeField] private KeyCode InteractiveKey = KeyCode.E;
+    [SerializeField] private KeyCode StunKey = KeyCode.Z;
+    [SerializeField] private LayerMask _enemyMask;
+    [SerializeField] private float _enemyDetectedRayDistance;
+    
     private bool _canInteractive = false;
     private bool _shouldOpenDoor => _canInteractive && Input.GetKeyDown(InteractiveKey);
+    private bool _shouldStunEnemy => !_isEnemyStunned && _isEnemyNear && Input.GetKeyDown(StunKey);
     private bool _capsuleDestroyed = false;
     
     private Generator _currentActiveGenerator;
     private Button _currentActiveButton;
     private CallElevatorButton _currentActiveCallElevatorButton;
+
+    public UnityAction Stunned;
+
+    private PlayerMovement _movement;
+    private bool _isEnemyNear;
+    private bool _isEnemyStunned;
+
+    private void Start()
+    {
+        _movement = GetComponent<PlayerMovement>();
+    }
 
     private void Update()
     {
@@ -50,6 +65,30 @@ public class Player : MonoBehaviour
                     _currentActiveCallElevatorButton.CallElevator();
                 }
             }
+        }
+
+        HandleNearEnemy();
+
+        if (_shouldStunEnemy)
+        {
+            Stunned?.Invoke();
+        }
+    }
+
+    private void HandleNearEnemy()
+    {
+        _isEnemyNear = Physics.Raycast(_movement.WallCheck.position, Vector3.right * (_movement.IsFacingRight ? 1 : -1), _enemyDetectedRayDistance, _enemyMask);
+        RaycastHit hit;
+
+        Ray ray = new Ray
+        (
+            _movement.WallCheck.position,
+            Vector3.right * (_movement.IsFacingRight ? 1 : -1)
+        );
+
+        if (Physics.Raycast(ray, out hit, _enemyDetectedRayDistance, _enemyMask))
+        {
+            _isEnemyStunned = hit.collider.GetComponent<Enemy>().IsStunned;
         }
     }
 

@@ -114,6 +114,9 @@ public class PlayerMovement : MonoBehaviour
     private bool _isMiddleLadderKeyPressed = false;
     private bool _canJumpFromMiddleLadder = false;
     private Vector3 _MiddleLadderCheckVector = Vector3.forward;
+
+    public Transform WallCheck => _wallCheck;
+    public bool IsFacingRight => _isFacingRight;
     
     private void Start()
     {
