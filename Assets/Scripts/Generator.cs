@@ -8,10 +8,12 @@ public class Generator : MonoBehaviour
     [SerializeField] private Transform _doorPivot;
     [SerializeField] private float _doorOpenSpeed;
     [SerializeField] private float _doorOpenDuration;
-    [SerializeField] private Capsule _capsule;
+    [SerializeField] private LightCapsule lightCapsule;
 
     private bool _isAnimationActive = false;
-    public bool DoorOpened = false;
+    
+    private bool _doorOpened;
+    public bool DoorOpened => _doorOpened;
 
     private void Update()
     {
@@ -29,7 +31,7 @@ public class Generator : MonoBehaviour
 
     public void DestroyCapsule()
     {
-        Destroy(_capsule.gameObject);
+        Destroy(lightCapsule.gameObject);
         _lamp.DisableArea();
     }
     
@@ -43,6 +45,6 @@ public class Generator : MonoBehaviour
             yield return null;
         }
 
-        DoorOpened = true;
+        _doorOpened = true;
     }
 }

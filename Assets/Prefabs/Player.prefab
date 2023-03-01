@@ -61,7 +61,7 @@ Transform:
   m_GameObject: {fileID: 1570955793666553446}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: -0.23625517, z: 0}
-  m_LocalScale: {x: 0.3, y: 1, z: 0.46}
+  m_LocalScale: {x: 0.30000004, y: 0.74790317, z: 0.46}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1570955794985260031}
@@ -134,6 +134,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 13ed5620ec7bbec4b8570be899a3e9e9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  InteractiveKey: 101
 --- !u!114 &1570955793666553448
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -149,31 +150,53 @@ MonoBehaviour:
   _walkSpeed: 2.5
   _crouchSpeed: 1
   _sprintSpeed: 4
+  _ladderSpeed: 1.25
   _jumpForce: 6.5
-  _wallJumpForce: 4.5
-  _wallJumpXForce: 3
-  _gravity: 18
-  _crouchHeight: 0.5
+  _wallJumpForce: 5.5
+  _wallJumpXForce: 4
+  _gravity: 16
+  _crouchHeight: 0.7
   _timeToCrouch: 0.25
-  _crouchingCenter: {x: 0, y: 0.2, z: 0}
+  _crouchingCenter: {x: 0, y: 0, z: 0}
   _standingCenter: {x: 0, y: 0, z: 0}
   JumpKey: 32
   CrouchKey: 306
   SprintKey: 304
+  ClimbKey: 119
+  DownLadderKey: 115
+  MiddleLadderKey: 101
   _canMove: 1
   _canJump: 1
-  _canSprint: 1
+  _canSprint: 0
   _canCrouch: 1
   _canSlideOnWall: 1
   _canWallJump: 1
+  _canClimbOnLedge: 1
+  _canClimbOnSideLadder: 1
+  _canClimbOnMiddleLadder: 1
   _ceil: {fileID: 1853289451}
   _wallCheck: {fileID: 5310173866000868777}
   _wallMask:
     serializedVersion: 2
     m_Bits: 128
-  _wallCheckRadius: 0.28
+  _ledgeMask:
+    serializedVersion: 2
+    m_Bits: 256
+  _sideLadderMask:
+    serializedVersion: 2
+    m_Bits: 512
+  _middleLadderMask:
+    serializedVersion: 2
+    m_Bits: 1024
   _slideSpeed: 3
   _blockInputDuration: 0.22
+  _climbAnimationDuration: 0.4
+  _wallRayDistance: 0.24
+  _middleLadderRayDistance: 0.5
+  _wallLedgeDistance: 0.3
+  _ledgeRayIntervalY: 0.21
+  _climbFinishOffsetX: 0.27
+  _climbFinishOffsetY: 0.22
 --- !u!143 &1570955793666553425
 CharacterController:
   m_ObjectHideFlags: 0

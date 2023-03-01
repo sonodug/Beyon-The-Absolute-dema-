@@ -1,12 +1,14 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
-public class GeneratorInteractiveZone : MonoBehaviour
+public class ButtonInteractiveZone : MonoBehaviour
 {
     private void OnTriggerEnter(Collider other)
     {
         if (other.gameObject.TryGetComponent<Player>(out Player player))
         {
-            player.HandleInteractiveWithGenerator(gameObject.GetComponentInParent<Generator>(), true);
+            player.HandleInteractiveWithDoorButton(gameObject.GetComponentInParent<Button>(), true);
         }
     }
     
@@ -14,7 +16,7 @@ public class GeneratorInteractiveZone : MonoBehaviour
     {
         if (other.gameObject.TryGetComponent<Player>(out Player player))
         {
-            player.HandleInteractiveWithGenerator(null, false);
+            player.HandleInteractiveWithDoorButton(null, false);
         }
     }
 }

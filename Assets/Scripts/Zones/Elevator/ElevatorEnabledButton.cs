@@ -1,12 +1,12 @@
 using UnityEngine;
 
-public class GeneratorInteractiveZone : MonoBehaviour
+public class ElevatorEnabledButton : MonoBehaviour
 {
     private void OnTriggerEnter(Collider other)
     {
         if (other.gameObject.TryGetComponent<Player>(out Player player))
         {
-            player.HandleInteractiveWithGenerator(gameObject.GetComponentInParent<Generator>(), true);
+            GetComponentInParent<Elevator>().EnableElevator();
         }
     }
     
@@ -14,7 +14,7 @@ public class GeneratorInteractiveZone : MonoBehaviour
     {
         if (other.gameObject.TryGetComponent<Player>(out Player player))
         {
-            player.HandleInteractiveWithGenerator(null, false);
+            GetComponentInParent<Elevator>().StopElevator();
         }
     }
 }
