@@ -6,6 +6,7 @@ public class Player : MonoBehaviour
 {
     [SerializeField] private KeyCode InteractiveKey = KeyCode.E;
     [SerializeField] private KeyCode StunKey = KeyCode.Z;
+    [SerializeField] private KeyCode UIKey = KeyCode.Escape;
     [SerializeField] private LayerMask _enemyMask;
     [SerializeField] private float _enemyDetectedRayDistance;
     [SerializeField] private Transform _spawnPoint;
@@ -13,6 +14,7 @@ public class Player : MonoBehaviour
     private bool _canInteractive = false;
     private bool _shouldOpenDoor => _canInteractive && Input.GetKeyDown(InteractiveKey);
     private bool _shouldStunEnemy => !_isEnemyStunned && _isEnemyNear && Input.GetKeyDown(StunKey);
+    private bool _shouldInteractiveWithUI => Input.GetKeyDown(UIKey);
     private bool _capsuleDestroyed = false;
     
     private Generator _currentActiveGenerator;
@@ -20,6 +22,7 @@ public class Player : MonoBehaviour
     private CallElevatorButton _currentActiveCallElevatorButton;
 
     public UnityAction Stunned;
+    public UnityAction MenuOpened;
 
     private PlayerMovement _movement;
     private bool _isEnemyNear;
@@ -32,6 +35,11 @@ public class Player : MonoBehaviour
 
     private void Update()
     {
+        if (_shouldInteractiveWithUI)
+        {
+            MenuOpened?.Invoke();
+        }
+        
         if (_shouldOpenDoor && !_capsuleDestroyed)
         {
             if (_currentActiveGenerator != null)

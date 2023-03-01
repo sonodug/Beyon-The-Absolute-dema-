@@ -465,27 +465,27 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
-    private void OnDrawGizmos()
-    {
-        Gizmos.color = Color.blue;
-        Gizmos.DrawLine(_wallCheck.position,
-            new Vector3(_wallCheck.position.x + _wallRayDistance * (_isFacingRight ? 1 : -1), _wallCheck.position.y, 0.0f));
-        
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawLine
-        (
-            new Vector3(_wallCheck.position.x, _wallCheck.position.y + _ledgeRayIntervalY, 0.0f),
-            new Vector3(_wallCheck.position.x + _wallRayDistance * (_isFacingRight ? 1 : -1),
-                _wallCheck.position.y + _ledgeRayIntervalY, 0.0f)
-        );
-        
-        Gizmos.color = Color.green;
-        Gizmos.DrawLine
-        (
-            new Vector3(_wallCheck.position.x + _wallRayDistance * (_isFacingRight ? 1 : -1), _wallCheck.position.y + _ledgeRayIntervalY, 0.0f),
-            new Vector3(_wallCheck.position.x + _wallRayDistance * (_isFacingRight ? 1 : -1), _wallCheck.position.y, 0.0f)
-        );
-    }
+    // private void OnDrawGizmos()
+    // {
+    //     Gizmos.color = Color.blue;
+    //     Gizmos.DrawLine(_wallCheck.position,
+    //         new Vector3(_wallCheck.position.x + _wallRayDistance * (_isFacingRight ? 1 : -1), _wallCheck.position.y, 0.0f));
+    //     
+    //     Gizmos.color = Color.yellow;
+    //     Gizmos.DrawLine
+    //     (
+    //         new Vector3(_wallCheck.position.x, _wallCheck.position.y + _ledgeRayIntervalY, 0.0f),
+    //         new Vector3(_wallCheck.position.x + _wallRayDistance * (_isFacingRight ? 1 : -1),
+    //             _wallCheck.position.y + _ledgeRayIntervalY, 0.0f)
+    //     );
+    //     
+    //     Gizmos.color = Color.green;
+    //     Gizmos.DrawLine
+    //     (
+    //         new Vector3(_wallCheck.position.x + _wallRayDistance * (_isFacingRight ? 1 : -1), _wallCheck.position.y + _ledgeRayIntervalY, 0.0f),
+    //         new Vector3(_wallCheck.position.x + _wallRayDistance * (_isFacingRight ? 1 : -1), _wallCheck.position.y, 0.0f)
+    //     );
+    // }
 
     private void TryToFlip()
     {
